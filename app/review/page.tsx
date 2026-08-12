@@ -1,7 +1,5 @@
-export const dynamic = 'force-dynamic';
-
 'use client';
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import GroupCard from '@/components/GroupCard';
 import EditModal, { type EditResult } from '@/components/EditModal';
