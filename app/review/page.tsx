@@ -1,5 +1,6 @@
-'use client';
 export const dynamic = 'force-dynamic';
+
+'use client';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import GroupCard from '@/components/GroupCard';
