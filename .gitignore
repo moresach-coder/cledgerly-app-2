@@ -1,0 +1,21 @@
+# dependencies
+/node_modules
+
+# next.js build output
+/.next/
+/out/
+
+# your actual financial data — never commit this
+/data/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# env
+.env*.local
+
+# misc
+.DS_Store
+*.tsbuildinfo
+next-env.d.ts

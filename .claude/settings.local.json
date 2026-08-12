@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc *)",
+      "Bash(npm run *)",
+      "Bash(npm install *)",
+      "Bash(node -e \"console.log\\('xlsx:', require\\('xlsx/package.json'\\).version\\); console.log\\('pdf-parse:', require\\('pdf-parse/package.json'\\).version\\)\")",
+      "Bash(node -e \"const p=require\\('pdf-parse'\\); console.log\\('pdf-parse loaded, type:', typeof p\\)\")",
+      "Bash(node -e \"console.log\\(JSON.stringify\\(require\\('./node_modules/pdf-parse/package.json'\\).exports,null,1\\)\\); console.log\\('version', require\\('./node_modules/pdf-parse/package.json'\\).version\\); console.log\\('keys', Object.keys\\(require\\('pdf-parse'\\)\\)\\)\")",
+      "Bash(npm uninstall *)",
+      "Bash(curl -s -X POST http://localhost:3000/api/import/file -F \"file=@/private/tmp/claude-501/-Users-sachinmore-Downloads-cledgerly-app-2/e87b3e29-268d-4730-a625-3e6299919d29/scratchpad/test-statement.xlsx\")",
+      "Bash(curl -s -X POST http://localhost:3000/api/import -H \"Content-Type: application/json\" -d '{\"account\":\"Test Card\",\"mode\":\"preview\",\"text\":\"02/08/2026, SWIGGY BANGALORE, 348.00\\\\n03/08/2026, NETFLIX SUBSCRIPTION, 649.00\\\\n05/08/2026, UBER TRIP, 245.50\\\\n07/08/2026, STARBUCKS COFFEE, 410.00\"}')",
+      "Bash(python3 -m json.tool)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/review)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/cards)",
+      "Bash(sed -i '' -e 's/>Your cards</>Your Cards</' app/cards/page.tsx)",
+      "Bash(sed -i '' -e 's/fixed right-5 bottom-6 flex items-center gap-2/fixed right-5 bottom-[84px] md:bottom-6 flex items-center gap-2/' app/review/page.tsx)"
+    ]
+  }
+}

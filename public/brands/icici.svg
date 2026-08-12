@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <circle cx="50" cy="50" r="48" fill="#B02A30"/>
+  <text x="50" y="38" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-weight="700" font-size="20" fill="#fff" letter-spacing="1">ICICI</text>
+  <text x="50" y="56" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-weight="700" font-size="14" fill="#fff" letter-spacing="0.5">BANK</text>
+  <rect x="20" y="64" width="60" height="2" rx="1" fill="#fff" opacity="0.5"/>
+</svg>
