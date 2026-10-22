@@ -123,10 +123,9 @@ export default function ReviewPage() {
 
   async function expand(g: TxnGroup) {
     if (rowsByGroup[g.key]) return;
-    const res = await fetch(`/api/transactions?status=${tab}`);
+    const res = await fetch(`/api/transactions?status=${tab}&ids=${g.ids.join(',')}`);
     const data = await res.json();
-    const set = new Set(g.ids);
-    setRowsByGroup((p) => ({ ...p, [g.key]: data.txns.filter((t: any) => set.has(t.id)) }));
+    setRowsByGroup((p) => ({ ...p, [g.key]: data.txns }));
   }
 
   async function applyIds(g: TxnGroup, ids: string[], status: 'accepted' | 'deferred') {
@@ -149,17 +148,16 @@ export default function ReviewPage() {
 
   async function changeSelection(ids: string[]) {
     if (ids.length === 0) return;
-    const res = await fetch(`/api/transactions?status=${tab}`);
+    const res = await fetch(`/api/transactions?ids=${ids[0]}`);
     const data = await res.json();
-    const first = data.txns.find((t: any) => t.id === ids[0]);
+    const first = data.txns[0];
     if (first) setEditing({ txn: first, presetIds: ids });
   }
 
   async function openRow(id: string) {
-    const res = await fetch(`/api/transactions?status=${tab}`);
+    const res = await fetch(`/api/transactions?ids=${id}`);
     const data = await res.json();
-    const t = data.txns.find((x: any) => x.id === id);
-    if (t) setEditing({ txn: t });
+    if (data.txns[0]) setEditing({ txn: data.txns[0] });
   }
 
   async function submitEdit(txn: Txn, result: EditResult, presetIds?: string[]) {

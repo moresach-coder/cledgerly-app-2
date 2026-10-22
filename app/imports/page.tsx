@@ -5,6 +5,21 @@ import { useRouter } from 'next/navigation';
 import BrandBadge from '@/components/BrandBadge';
 import Amount from '@/components/Amount';
 import { friendlyDate } from '@/lib/reference';
+import { useToast } from '@/components/Toast';
+
+function ConfirmDialog({ message, onConfirm, onCancel }: { message: string; onConfirm: () => void; onCancel: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm px-4 pb-8">
+      <div className="bg-credsurface border border-credline rounded-2xl p-5 w-full max-w-sm shadow-xl">
+        <p className="text-body text-credink leading-relaxed mb-5">{message}</p>
+        <div className="flex gap-2">
+          <button onClick={onCancel} className="flex-1 py-2.5 rounded-xl bg-credbg border border-credline text-small font-bold text-credink">Cancel</button>
+          <button onClick={onConfirm} className="flex-1 py-2.5 rounded-xl bg-neg text-white text-small font-bold">Delete</button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function Stat({ label, value, tone }: { label: string; value: string | number; tone?: 'warn' | 'pos' }) {
   return (
@@ -20,11 +35,59 @@ function Stat({ label, value, tone }: { label: string; value: string | number; t
 export default function ImportsPage() {
   const router = useRouter();
   const [data, setData] = useState<any>(null);
+  const [clearing, setClearing] = useState(false);
+  const [passwords, setPasswords] = useState<Record<string, string>>({});
+  const [savingPwd, setSavingPwd] = useState<string | null>(null);
+  const [confirm, setConfirm] = useState<{ message: string; onConfirm: () => void } | null>(null);
+  const toast = useToast();
 
   const load = useCallback(async () => {
     setData(await (await fetch('/api/imports')).json());
   }, []);
   useEffect(() => { load(); }, [load]);
+
+  function clearAllData() {
+    setConfirm({
+      message: 'Delete all imported transactions, statements, and email records? Your email connection and passwords are preserved.',
+      onConfirm: async () => {
+        setClearing(true);
+        try {
+          const res = await fetch('/api/imports/clear', { method: 'POST' });
+          const result = await res.json();
+          if (res.ok) {
+            toast(`Cleared ${result.deleted} records`, 'ok');
+            load();
+          } else {
+            toast('Error: ' + result.error, 'err');
+          }
+        } finally {
+          setClearing(false);
+        }
+      },
+    });
+  }
+
+  async function saveLockedPassword(institution: string) {
+    const pwd = passwords[institution];
+    if (!pwd) return;
+    setSavingPwd(institution);
+    try {
+      const res = await fetch('/api/email/passwords', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ institution, password: pwd, hint: '' }),
+      });
+      if (res.ok) {
+        toast(`Password saved for ${institution.toUpperCase()}`, 'ok');
+        setPasswords({ ...passwords, [institution]: '' });
+        load();
+      } else {
+        toast('Error saving password', 'err');
+      }
+    } finally {
+      setSavingPwd(null);
+    }
+  }
 
   if (!data) return <div className="min-h-screen bg-credbg px-5 pt-5" />;
 
@@ -35,6 +98,13 @@ export default function ImportsPage() {
 
   return (
     <div className="min-h-screen bg-credbg text-credink px-5 pt-5 pb-8">
+      {confirm && (
+        <ConfirmDialog
+          message={confirm.message}
+          onConfirm={() => { confirm.onConfirm(); setConfirm(null); }}
+          onCancel={() => setConfirm(null)}
+        />
+      )}
       <Link href="/settings" className="text-small text-credmuted font-semibold">&larr; Settings</Link>
       <h1 className="text-display font-extrabold tracking-[-0.02em] mt-2">What&apos;s Imported</h1>
       <p className="text-small text-credmuted mt-1 mb-5">
@@ -46,6 +116,21 @@ export default function ImportsPage() {
         <Stat label="Accounts" value={data.accounts.length} />
         <Stat label="Locked" value={locked} tone={locked ? 'warn' : undefined} />
         <Stat label="Unrecognised" value={unmapped} tone={unmapped ? 'warn' : undefined} />
+      </div>
+
+      {/* ---------------------------------------------------------- actions */}
+      <div className="bg-neg/8 border border-neg/25 rounded-xl p-4 mb-6">
+        <div className="text-small font-bold text-neg mb-2">Start Fresh</div>
+        <p className="text-caption text-credmuted mb-3 leading-relaxed">
+          Delete all imported transactions, statements, and email records to start over with a clean database.
+        </p>
+        <button
+          onClick={clearAllData}
+          disabled={clearing}
+          className="w-full py-2.5 rounded-lg bg-neg text-white text-small font-bold disabled:opacity-40"
+        >
+          {clearing ? 'Clearing…' : 'Clear All Data'}
+        </button>
       </div>
 
       {/* ------------------------------------------------------- per account */}
@@ -156,22 +241,41 @@ export default function ImportsPage() {
             Locked Statements
           </div>
           <p className="text-caption text-credmuted mb-3 leading-relaxed">
-            {locked} statement{locked === 1 ? '' : 's'} arrived but could not be opened. Add the password in
-            Settings and run Sync again — they are kept, not discarded.
+            {locked} statement{locked === 1 ? '' : 's'} arrived but could not be opened. Enter the password below and they will unlock automatically.
           </p>
-          <div className="space-y-2 mb-6">
-            {data.lockedStatements.map((s: any) => (
-              <div key={s.sender} className="bg-warn/8 border border-warn/25 rounded-xl px-3.5 py-3">
-                <div className="flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="text-small font-bold truncate">{s.sender}</div>
-                    <div className="text-caption text-credmuted mt-0.5 truncate">{s.subject}</div>
+          <div className="space-y-3 mb-6">
+            {data.lockedStatements.map((s: any) => {
+              const institution = s.detail.split(':')[0].toLowerCase().trim();
+              return (
+                <div key={s.sender} className="bg-warn/8 border border-warn/25 rounded-xl px-3.5 py-3">
+                  <div className="flex items-center justify-between gap-3 mb-2">
+                    <div className="min-w-0">
+                      <div className="text-small font-bold truncate">{s.sender}</div>
+                      <div className="text-caption text-credmuted mt-0.5 truncate">{s.subject}</div>
+                    </div>
+                    <span className="text-caption font-bold text-warn flex-none">{s.count}</span>
                   </div>
-                  <span className="text-caption font-bold text-warn flex-none">{s.count}</span>
+                  <div className="text-micro text-credmuted mb-2">{s.detail}</div>
+                  <div className="flex gap-2">
+                    <input
+                      type="password"
+                      placeholder="Enter statement password"
+                      value={passwords[institution] || ''}
+                      onChange={(e) => setPasswords({ ...passwords, [institution]: e.target.value })}
+                      className="flex-1 bg-credbg border border-credline rounded-lg px-3 py-2 text-sm text-credink"
+                      autoComplete="off"
+                    />
+                    <button
+                      onClick={() => saveLockedPassword(institution)}
+                      disabled={!passwords[institution] || savingPwd === institution}
+                      className="px-4 py-2 rounded-lg bg-credink text-white text-small font-bold disabled:opacity-40 flex-none"
+                    >
+                      {savingPwd === institution ? 'Saving…' : 'Save'}
+                    </button>
+                  </div>
                 </div>
-                <div className="text-micro text-credmuted mt-1.5">{s.detail}</div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </>
       )}

@@ -19,7 +19,7 @@ export const TYPES: { id: TxnType; label: string; expense: boolean }[] = [
   { id: 'reimb_received', label: 'Reimbursement received', expense: false },
   { id: 'refund', label: 'Refund', expense: false },
   { id: 'cash', label: 'Cash withdrawal', expense: false },
-  { id: 'unclassified', label: 'Unclassified', expense: false },
+  { id: 'unclassified', label: 'Unclassified', expense: true },
 ];
 
 export const CATEGORIES = [

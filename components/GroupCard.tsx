@@ -134,10 +134,8 @@ export default function GroupCard({
                 {rows.map((r, i) => (
                   <div key={r.id} className={`flex items-center gap-3 px-4 py-2.5 ${i % 2 === 1 ? 'bg-credline/40' : ''}`}>
                     <div className="flex-1 min-w-0">
-                      <div className="text-small font-medium">{friendlyDate(r.date, true)}</div>
-                      {r.category && (
-                        <div className="text-caption text-credmuted mt-0.5">{catInfo(r.category).label}</div>
-                      )}
+                      <div className="text-small font-medium truncate">{displayMerchant(r.merchant)}</div>
+                      <div className="text-caption text-credmuted mt-0.5">{friendlyDate(r.date, true)}{r.category ? ` · ${catInfo(r.category).label}` : ''}</div>
                     </div>
                     <span className="flex-none"><Amount value={r.amount} size="sm" /></span>
                   </div>
@@ -165,10 +163,8 @@ export default function GroupCard({
                           ✓
                         </button>
                         <button onClick={() => onOpenRow(r.id)} className="flex-1 min-w-0 text-left">
-                          <div className="text-small font-medium">{friendlyDate(r.date, true)}</div>
-                          {r.category && (
-                            <div className="text-caption text-credmuted mt-0.5">{catInfo(r.category).label}</div>
-                          )}
+                          <div className="text-small font-medium truncate">{displayMerchant(r.merchant)}</div>
+                          <div className="text-caption text-credmuted mt-0.5">{friendlyDate(r.date, true)}{r.category ? ` · ${catInfo(r.category).label}` : ''}</div>
                         </button>
                         <span className="flex-none"><Amount value={r.amount} size="sm" /></span>
                       </div>

@@ -6,7 +6,9 @@ export async function GET(req: NextRequest) {
   const status = searchParams.get('status') || undefined;
   const month = searchParams.get('month') || undefined;
   const account = searchParams.get('account') || undefined;
-  const txns = await listTransactions({ status, month });
+  const idsParam = searchParams.get('ids');
+  const ids = idsParam ? idsParam.split(',').filter(Boolean) : undefined;
+  const txns = await listTransactions({ status, month, ids });
   const counts = await getStatusCounts(account);
   const statements = await getStatements();
   return NextResponse.json({ txns, counts, statements });

@@ -44,6 +44,19 @@ export function institutionFromSender(from: string): string | null {
 
 const PDF_RE = /\.pdf$/i;
 
+function isInvestmentOrBrokerMail(from: string, subject: string): boolean {
+  const f = from.toLowerCase();
+  const s = subject.toLowerCase();
+  const investmentDomains = [
+    'mutual', 'mf@', 'fund', 'kfintech', 'camsonline', 'sharekhan',
+    'angelbroking', 'zerodha', 'groww', 'upstox', 'paytm', 'phonepe',
+    'iciciprulife', 'life.com', 'insurance', 'nps', 'cas', 'demat',
+    'brokerage', 'broker', 'commodity', 'forex',
+  ];
+  for (const domain of investmentDomains) if (f.includes(domain) || s.includes(domain)) return true;
+  return false;
+}
+
 function isStatementMail(subject: string, hasPdf: boolean): boolean {
   return hasPdf || /statement|e-?statement/i.test(subject);
 }
@@ -77,32 +90,34 @@ export async function syncAccount(account: EmailAccount, firstRunDays = 120): Pr
   const touchedAccounts = new Set<string>();
   let highestUid = account.lastUid;
 
+  // For Gmail, [Gmail]/All Mail contains everything across labels — much better than INBOX only.
+  // We fall back to INBOX if listing fails or no All Mail folder exists.
+  let mailbox = account.mailbox;
   try {
-    const lock = await client.getMailboxLock(account.mailbox);
+    const list = await client.list();
+    const allMail = list.find((m: any) => /all.?mail/i.test(m.path));
+    if (allMail) mailbox = allMail.path;
+  } catch { /* keep default */ }
+
+  try {
+    const lock = await client.getMailboxLock(mailbox);
     try {
-      // First run has no high-water mark. Scanning the whole mailbox would mean pulling
-      // years of unrelated mail, so the initial pass is bounded by date and later runs
-      // continue from the last UID seen.
-      let range: string | number[];
-      if (account.lastUid > 0) {
-        range = `${account.lastUid + 1}:*`;
-      } else {
-        const since = new Date(Date.now() - firstRunDays * 86_400_000);
-        const uids = (await client.search({ since }, { uid: true })) || [];
-        if (uids.length === 0) {
-          return result; // nothing recent enough to look at
-        }
-        range = uids as number[];
+      // Always scan by date so we catch everything in the window, not just UIDs above watermark.
+      // alreadyProcessed() deduplicates so re-scanning is safe.
+      const since = account.lastUid > 0
+        ? new Date(Date.now() - 7 * 86_400_000) // last 7 days on subsequent syncs
+        : new Date(Date.now() - firstRunDays * 86_400_000);
+
+      const uids = (await client.search({ since }, { uid: true })) || [];
+      if (uids.length === 0) {
+        return result;
       }
 
       for await (const msg of client.fetch(
-        range,
+        uids as number[],
         { uid: true, envelope: true, source: true },
         { uid: true }
       )) {
-        // A "start:*" range always yields at least the last message, even when it is
-        // already below the mark.
-        if (msg.uid <= account.lastUid) continue;
         highestUid = Math.max(highestUid, msg.uid);
 
         if (await alreadyProcessed(account.id, msg.uid)) continue;
@@ -115,6 +130,11 @@ export async function syncAccount(account: EmailAccount, firstRunDays = 120): Pr
 
         if (!looksLikeBankMail(from, subject)) {
           await logMessage({ ...base, kind: 'ignored', status: 'skipped', detail: 'Not bank mail' });
+          continue;
+        }
+
+        if (isInvestmentOrBrokerMail(from, subject)) {
+          await logMessage({ ...base, kind: 'ignored', status: 'skipped', detail: 'Investment/broker mail - not supported' });
           continue;
         }
 

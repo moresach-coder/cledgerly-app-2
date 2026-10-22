@@ -163,7 +163,7 @@ export function classify(merchant: string, narration: string, rules: RuleMap) {
  * becomes dozens of phantom transactions.
  */
 const NOISE =
-  /(minimum\s*(amount\s*)?(payment|due)|total\s*(amount\s*)?due|amount\s*due|payment\s*due|due\s*by|due\s*date|statement\s*(period|includes|date|summary)|billing\s*period|credit\s*limit|available\s*(credit|limit|cash)|cash\s*limit|(previous|opening|closing|outstanding)\s*balance|total\s*(debits?|credits?|spends?|purchases?)|toll[\s-]*free|customer\s*(care|service)|helpline|contact\s*us|page\s*\d+\s*(of|\/)\s*\d+|gstin|\bpan\b|reward\s*points?|thank\s*you|please\s*(pay|note|call)|register(ed)?\s*office|www\.|https?:|@[a-z]|sector\s*-?\s*\d+|\bph\.?\s*(no|ii)\b|^\s*[\+\(]?\d{2,4}[-\s\)]\s*\d{3,}|\b\d{6}\s*$|card\s*number|15-digit)/i;
+  /(minimum\s*(amount\s*)?(payment|due)|total\s*(amount\s*)?due|amount\s*due|payment\s*due|due\s*by|due\s*date|statement\s*(period|includes|date|summary)|billing\s*period|credit\s*limit|available\s*(credit|limit|cash)|cash\s*limit|(previous|opening|closing|outstanding)\s*balance|total\s*(debits?|credits?|spends?|purchases?)|toll[\s-]*free|customer\s*(care|service)|helpline|contact\s*us|page\s*\d+\s*(of|\/)\s*\d+|gstin|\bpan\b|reward\s*points?|thank\s*you|please\s*(pay|note|call)|register(ed)?\s*office|www\.|https?:|@[a-z]|sector\s*-?\s*\d+|\bph\.?\s*(no|ii)\b|^\s*[\+\(]?\d{2,4}[-\s\)]\s*\d{3,}|\b\d{6}\s*$|card\s*number|15-digit|card\s*member|cardmember|account\s*(number|holder|summary)|member\s*since|loyalty\s*(number|id)|xxxx\s*x|x{4,}|ending\s*(in|with)\s*\d{4}|supplementary|add-on\s*card)/i;
 
 /** A line that is only punctuation, an address fragment, or a bare number. */
 function isStructuralNoise(line: string): boolean {

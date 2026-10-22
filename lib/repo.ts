@@ -85,8 +85,12 @@ export async function commitImport(
       args: [statementId, account, declared, parsedTotal, lines.length, periodFrom, periodTo, meta?.statementDate ?? null, meta?.fileName ?? null],
     });
 
+    // Track keys seen within this import to catch repeated rows in the same PDF
+    const withinImportSeen = new Set<string>();
     for (const l of lines) {
-      const dupOf = await findDuplicateId(l.date, l.amount, l.merchant, l.narration);
+      const withinKey = `${l.date}|${l.amount}|${l.narration}`;
+      const dupOf = withinImportSeen.has(withinKey) ? 'self' : await findDuplicateId(l.date, l.amount, l.merchant, l.narration);
+      withinImportSeen.add(withinKey);
       const isDup = !!dupOf;
       if (isDup) dupCount++;
       await tx.execute({
@@ -109,13 +113,18 @@ export async function commitImport(
   return { statementId, parsedTotal, count: lines.length, duplicatesFlagged: dupCount };
 }
 
-export async function listTransactions(filter?: { status?: string; account?: string; month?: string }): Promise<Txn[]> {
+export async function listTransactions(filter?: { status?: string; account?: string; month?: string; ids?: string[] }): Promise<Txn[]> {
   await dbReady;
   let q = 'SELECT * FROM transactions WHERE 1=1';
   const params: any[] = [];
-  if (filter?.status && filter.status !== 'all') { q += ' AND status = ?'; params.push(filter.status); }
-  if (filter?.account) { q += ' AND account = ?'; params.push(filter.account); }
-  if (filter?.month) { q += ' AND substr(date,1,7) = ?'; params.push(filter.month); }
+  if (filter?.ids && filter.ids.length > 0) {
+    q += ` AND id IN (${filter.ids.map(() => '?').join(',')})`;
+    params.push(...filter.ids);
+  } else {
+    if (filter?.status && filter.status !== 'all') { q += ' AND status = ?'; params.push(filter.status); }
+    if (filter?.account) { q += ' AND account = ?'; params.push(filter.account); }
+    if (filter?.month) { q += ' AND substr(date,1,7) = ?'; params.push(filter.month); }
+  }
   q += ' ORDER BY date DESC, created_at DESC';
   const result = await db.execute({ sql: q, args: params });
   return (result.rows as any[]).map(rowToTxn);
